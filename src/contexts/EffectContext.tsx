@@ -1,9 +1,39 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect as useReactEffect } from 'react';
-import { HistoryState, pushToHistory, undoHistory, redoHistory, jumpToHistory, useKeyboardShortcuts } from '@/hooks/useHistory';
+import React, { 
+  createContext, 
+  useContext, 
+  useState, 
+  useCallback, 
+  useMemo, 
+  useEffect,
+  ReactNode 
+} from 'react';
+import { 
+  HistoryState, 
+  pushToHistory, 
+  undoHistory, 
+  redoHistory, 
+  jumpToHistory, 
+  useKeyboardShortcuts 
+} from '@/hooks/useHistory';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export type EffectType = 'glow' | 'glass' | 'neomorph' | 'clay';
 export type ThemeModeType = 'dark' | 'light' | 'auto';
+export type ThemeMode = ThemeModeType; // Alias for compatibility
 export type GlowAnimationType = 'none' | 'pulse' | 'breathe' | 'wave';
+export type ShapeType = 'flat' | 'concave' | 'convex' | 'pressed';
+export type SurfaceTexture = 'smooth' | 'matte' | 'glossy';
+
+// Theme customizer types
+export type ShapePreset = 'rounded' | 'sharp' | 'circular' | 'custom';
+export type SolidStyle = 'fill' | 'outline' | 'ghost';
+export type EffectStyle = 'shadow' | 'glow' | 'none';
+export type SurfaceStyle = 'flat' | 'gradient' | 'textured';
+export type DataStyle = 'bars' | 'lines' | 'areas' | 'mixed';
+export type TransitionStyle = 'smooth' | 'snappy' | 'elastic';
 
 export interface GlowSettings {
   lightness: number;
@@ -15,7 +45,7 @@ export interface GlowSettings {
   animationIntensity: number;
 }
 
-interface BlurSettings {
+export interface BlurSettings {
   x: number;
   y: number;
 }
@@ -34,7 +64,7 @@ export interface NeomorphSettings {
   distance: number;
   blur: number;
   intensity: number;
-  shape: 'flat' | 'concave' | 'convex' | 'pressed';
+  shape: ShapeType;
   lightSource: number;
   surfaceColor: string;
 }
@@ -45,11 +75,15 @@ export interface ClaySettings {
   borderRadius: number;
   highlightColor: string;
   shadowColor: string;
-  surfaceTexture: 'smooth' | 'matte' | 'glossy';
+  surfaceTexture: SurfaceTexture;
   bendAngle: number;
+  // Additional properties for ClayEditor
+  opacity?: number;
+  blur?: number;
+  shadowDirection?: number;
 }
 
-interface EffectState {
+export interface EffectState {
   powerOn: boolean;
   activeEffects: Record<EffectType, boolean>;
   themeMode: ThemeModeType;
@@ -71,9 +105,13 @@ interface EffectContextType {
   updateNeomorphSettings: (settings: Partial<NeomorphSettings>) => void;
   updateClaySettings: (settings: Partial<ClaySettings>) => void;
   resetBlurPosition: () => void;
+  resetToDefaults: () => void;
   getActiveEffectsCount: () => number;
   getOklchColor: () => string;
   generateCSS: () => string;
+  exportState: () => string;
+  importState: (jsonString: string) => boolean;
+  // History
   history: HistoryState<EffectState>;
   undo: () => void;
   redo: () => void;
@@ -82,6 +120,29 @@ interface EffectContextType {
   jumpToHistoryEntry: (id: string) => void;
   clearHistory: () => void;
 }
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const STORAGE_KEY = 'effect-editor';
+const DEFAULT_BLUR_X = -590;
+const DEFAULT_BLUR_Y = -1070;
+
+const defaultGlowSettings: GlowSettings = {
+  lightness: 78,
+  chroma: 0.18,
+  hue: 70,
+  baseColor: '#FF9F00',
+  animation: 'none',
+  animationSpeed: 2,
+  animationIntensity: 50,
+};
+
+const defaultBlurSettings: BlurSettings = {
+  x: DEFAULT_BLUR_X,
+  y: DEFAULT_BLUR_Y,
+};
 
 const defaultGlassSettings: GlassSettings = {
   blur: 12,
@@ -110,9 +171,12 @@ const defaultClaySettings: ClaySettings = {
   shadowColor: '#000000',
   surfaceTexture: 'smooth',
   bendAngle: 0,
+  opacity: 100,
+  blur: 20,
+  shadowDirection: 135,
 };
 
-const defaultState: EffectState = {
+export const defaultEffectState: EffectState = {
   powerOn: true,
   activeEffects: {
     glow: true,
@@ -121,60 +185,77 @@ const defaultState: EffectState = {
     clay: false,
   },
   themeMode: 'dark',
-  glowSettings: {
-    lightness: 78,
-    chroma: 0.18,
-    hue: 70,
-    baseColor: '#FF9F00',
-    animation: 'none',
-    animationSpeed: 2,
-    animationIntensity: 50,
-  },
-  blurSettings: {
-    x: -590,
-    y: -1070,
-  },
+  glowSettings: defaultGlowSettings,
+  blurSettings: defaultBlurSettings,
   glassSettings: defaultGlassSettings,
   neomorphSettings: defaultNeomorphSettings,
   claySettings: defaultClaySettings,
 };
 
-const STORAGE_KEY = 'effect-editor';
+// ============================================================================
+// CONTEXT
+// ============================================================================
 
 const EffectContext = createContext<EffectContextType | undefined>(undefined);
 
+// ============================================================================
+// UTILITIES
+// ============================================================================
+
+const loadStateFromStorage = (): EffectState => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return defaultEffectState;
+    
+    const parsed = JSON.parse(stored);
+    return { ...defaultEffectState, ...parsed };
+  } catch (error) {
+    console.error('Failed to load effect state from storage:', error);
+    return defaultEffectState;
+  }
+};
+
+const saveStateToStorage = (state: EffectState): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save effect state to storage:', error);
+  }
+};
+
+const clamp = (value: number, min: number, max: number): number => {
+  return Math.min(Math.max(value, min), max);
+};
+
+const formatOklch = (lightness: number, chroma: number, hue: number): string => {
+  const l = clamp(lightness, 0, 100) / 100;
+  const c = clamp(chroma, 0, 0.4);
+  const h = hue % 360;
+  return `oklch(${l.toFixed(2)} ${c.toFixed(3)} ${h})`;
+};
+
+// ============================================================================
+// PROVIDER
+// ============================================================================
+
 export const EffectProvider = ({ children }: { children: ReactNode }) => {
   const [historyState, setHistoryState] = useState<HistoryState<EffectState>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const initialState = stored 
-        ? { ...defaultState, ...JSON.parse(stored) } 
-        : defaultState;
-      return {
-        past: [],
-        present: initialState,
-        future: [],
-      };
-    } catch (error) {
-      console.error('Failed to load saved state:', error);
-      return {
-        past: [],
-        present: defaultState,
-        future: [],
-      };
-    }
+    const initialState = loadStateFromStorage();
+    return {
+      past: [],
+      present: initialState,
+      future: [],
+    };
   });
 
   const state = historyState.present;
 
-  useReactEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Failed to save state:', error);
-    }
+  // Persist state to storage
+  useEffect(() => {
+    saveStateToStorage(state);
   }, [state]);
 
+  // History management
   const pushHistory = useCallback((newState: EffectState, label: string) => {
     setHistoryState(prev => pushToHistory(prev, newState, label));
   }, []);
@@ -190,6 +271,7 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   const canUndo = historyState.past.length > 0;
   const canRedo = historyState.future.length > 0;
 
+  // Keyboard shortcuts
   useKeyboardShortcuts(undo, redo, canUndo, canRedo);
 
   const jumpToHistoryEntry = useCallback((id: string) => {
@@ -204,23 +286,29 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, []);
 
+  // State mutation functions
   const togglePower = useCallback(() => {
     const newState = { ...state, powerOn: !state.powerOn };
     pushHistory(newState, `Power ${newState.powerOn ? 'on' : 'off'}`);
   }, [state, pushHistory]);
 
   const toggleEffect = useCallback((effect: EffectType) => {
+    const newActiveState = !state.activeEffects[effect];
     const newState = {
       ...state,
       activeEffects: {
         ...state.activeEffects,
-        [effect]: !state.activeEffects[effect],
+        [effect]: newActiveState,
       },
     };
-    pushHistory(newState, `${effect} ${newState.activeEffects[effect] ? 'enabled' : 'disabled'}`);
+    pushHistory(
+      newState, 
+      `${effect.charAt(0).toUpperCase() + effect.slice(1)} ${newActiveState ? 'enabled' : 'disabled'}`
+    );
   }, [state, pushHistory]);
 
   const setThemeMode = useCallback((mode: ThemeModeType) => {
+    if (state.themeMode === mode) return;
     const newState = { ...state, themeMode: mode };
     pushHistory(newState, `Theme: ${mode}`);
   }, [state, pushHistory]);
@@ -272,22 +360,29 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   const resetBlurPosition = useCallback(() => {
     const newState = {
       ...state,
-      blurSettings: { x: -590, y: -1070 },
+      blurSettings: { ...defaultBlurSettings },
     };
     pushHistory(newState, 'Blur position reset');
   }, [state, pushHistory]);
 
-  const getActiveEffectsCount = useCallback(() => {
+  const resetToDefaults = useCallback(() => {
+    pushHistory(defaultEffectState, 'Reset to defaults');
+  }, [pushHistory]);
+
+  // Utility functions
+  const getActiveEffectsCount = useCallback((): number => {
     return Object.values(state.activeEffects).filter(Boolean).length;
   }, [state.activeEffects]);
 
-  const getOklchColor = useCallback(() => {
+  const getOklchColor = useCallback((): string => {
     const { lightness, chroma, hue } = state.glowSettings;
-    return `oklch(${(lightness / 100).toFixed(2)} ${chroma.toFixed(3)} ${hue})`;
+    return formatOklch(lightness, chroma, hue);
   }, [state.glowSettings]);
 
-  const generateCSS = useCallback(() => {
+  const generateCSS = useCallback((): string => {
     const oklch = getOklchColor();
+    const { x, y } = state.blurSettings;
+    
     return `.glow-effect {
   background-color: ${oklch};
   filter: blur(180px);
@@ -295,12 +390,29 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
 
 .phone-preview {
   --glow-color: ${oklch};
-  --blur-x: ${state.blurSettings.x}px;
-  --blur-y: ${state.blurSettings.y}px;
+  --blur-x: ${x}px;
+  --blur-y: ${y}px;
 }`;
   }, [getOklchColor, state.blurSettings]);
 
-  const value = useMemo(() => ({
+  const exportState = useCallback((): string => {
+    return JSON.stringify(state, null, 2);
+  }, [state]);
+
+  const importState = useCallback((jsonString: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      const newState = { ...defaultEffectState, ...parsed };
+      pushHistory(newState, 'State imported');
+      return true;
+    } catch (error) {
+      console.error('Failed to import state:', error);
+      return false;
+    }
+  }, [pushHistory]);
+
+  // Context value
+  const contextValue = useMemo<EffectContextType>(() => ({
     state,
     togglePower,
     toggleEffect,
@@ -311,9 +423,12 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     updateNeomorphSettings,
     updateClaySettings,
     resetBlurPosition,
+    resetToDefaults,
     getActiveEffectsCount,
     getOklchColor,
     generateCSS,
+    exportState,
+    importState,
     history: historyState,
     undo,
     redo,
@@ -322,24 +437,87 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     jumpToHistoryEntry,
     clearHistory,
   }), [
-    state, togglePower, toggleEffect, setThemeMode, 
-    updateGlowSettings, updateBlurSettings, updateGlassSettings,
-    updateNeomorphSettings, updateClaySettings, resetBlurPosition,
-    getActiveEffectsCount, getOklchColor, generateCSS,
-    historyState, undo, redo, canUndo, canRedo, jumpToHistoryEntry, clearHistory
+    state,
+    togglePower,
+    toggleEffect,
+    setThemeMode,
+    updateGlowSettings,
+    updateBlurSettings,
+    updateGlassSettings,
+    updateNeomorphSettings,
+    updateClaySettings,
+    resetBlurPosition,
+    resetToDefaults,
+    getActiveEffectsCount,
+    getOklchColor,
+    generateCSS,
+    exportState,
+    importState,
+    historyState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    jumpToHistoryEntry,
+    clearHistory,
   ]);
 
   return (
-    <EffectContext.Provider value={value}>
+    <EffectContext.Provider value={contextValue}>
       {children}
     </EffectContext.Provider>
   );
 };
 
-export const useEffects = () => {
+// Alias for compatibility
+export const ThemeProvider = EffectProvider;
+
+// ============================================================================
+// HOOK
+// ============================================================================
+
+export const useEffects = (): EffectContextType => {
   const context = useContext(EffectContext);
+  
   if (!context) {
     throw new Error('useEffects must be used within EffectProvider');
   }
+  
   return context;
+};
+
+// Alias for compatibility
+export const useTheme = useEffects;
+
+// ============================================================================
+// UTILITY HOOKS
+// ============================================================================
+
+export const useEffectToggle = (effect: EffectType) => {
+  const { state, toggleEffect } = useEffects();
+  
+  return {
+    isActive: state.activeEffects[effect],
+    toggle: () => toggleEffect(effect),
+  };
+};
+
+export const useGlowControls = () => {
+  const { state, updateGlowSettings, getOklchColor } = useEffects();
+  
+  return {
+    settings: state.glowSettings,
+    updateSettings: updateGlowSettings,
+    oklchColor: getOklchColor(),
+  };
+};
+
+export const useBlurControls = () => {
+  const { state, updateBlurSettings, resetBlurPosition } = useEffects();
+  
+  return {
+    settings: state.blurSettings,
+    updateSettings: updateBlurSettings,
+    reset: resetBlurPosition,
+  };
 };
