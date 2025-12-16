@@ -116,9 +116,6 @@ export const ThemeCustomizer = () => {
       {/* Content */}
       <div className="p-3 overflow-y-auto flex-1">
         <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions} className="space-y-2">
-          {/* Theme Mode */}
-          <ThemeModeSection theme={theme} updateTheme={updateTheme} />
-
           {/* Shape */}
           <ShapeSection theme={theme} updateTheme={updateTheme} />
 
