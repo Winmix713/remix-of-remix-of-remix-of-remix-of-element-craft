@@ -1,4 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { 
+  createContext, 
+  useContext, 
+  useState, 
+  useEffect, 
+  useCallback,
+  useMemo,
+  ReactNode 
+} from 'react';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ShapePreset = 'sharp' | 'rounded' | 'full';
@@ -7,14 +19,15 @@ export type EffectStyle = 'flat' | 'plastic';
 export type SurfaceStyle = 'filled' | 'translucent';
 export type DataStyle = 'categorical' | 'divergent' | 'sequential';
 export type TransitionStyle = 'all' | 'micro' | 'macro' | 'none';
+export type NeutralColor = 'slate' | 'gray' | 'zinc';
 
-interface ColorPalette {
+export interface ColorPalette {
   primary: string;
   accent: string;
-  neutral: 'slate' | 'gray' | 'zinc';
+  neutral: NeutralColor;
 }
 
-interface ThemeState {
+export interface ThemeState {
   mode: ThemeMode;
   shape: ShapePreset;
   colors: ColorPalette;
@@ -36,9 +49,23 @@ interface ThemeContextType {
   setTheme: React.Dispatch<React.SetStateAction<ThemeState>>;
   updateTheme: (updates: Partial<ThemeState>) => void;
   resetTheme: () => void;
+  isDark: boolean;
+  toggleMode: () => void;
 }
 
-const defaultTheme: ThemeState = {
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const STORAGE_KEY = 'theme-customizer';
+
+const RADIUS_MAP: Record<ShapePreset, string> = {
+  sharp: '0',
+  rounded: '0.5rem',
+  full: '9999px',
+} as const;
+
+export const defaultTheme: ThemeState = {
   mode: 'system',
   shape: 'rounded',
   colors: {
@@ -59,52 +86,195 @@ const defaultTheme: ThemeState = {
   selectorBaseSize: 4,
 };
 
+// ============================================================================
+// CONTEXT
+// ============================================================================
+
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<ThemeState>(() => {
-    const stored = localStorage.getItem('theme-customizer');
-    return stored ? { ...defaultTheme, ...JSON.parse(stored) } : defaultTheme;
-  });
+// ============================================================================
+// UTILITIES
+// ============================================================================
 
+const loadThemeFromStorage = (): ThemeState => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return defaultTheme;
+    
+    const parsed = JSON.parse(stored);
+    return { ...defaultTheme, ...parsed };
+  } catch (error) {
+    console.error('Failed to load theme from storage:', error);
+    return defaultTheme;
+  }
+};
+
+const saveThemeToStorage = (theme: ThemeState): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(theme));
+  } catch (error) {
+    console.error('Failed to save theme to storage:', error);
+  }
+};
+
+const getSystemTheme = (): 'light' | 'dark' => {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const getEffectiveTheme = (mode: ThemeMode): 'light' | 'dark' => {
+  return mode === 'system' ? getSystemTheme() : mode;
+};
+
+// ============================================================================
+// PROVIDER
+// ============================================================================
+
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<ThemeState>(loadThemeFromStorage);
+
+  // Calculate effective theme (light/dark)
+  const isDark = useMemo(
+    () => getEffectiveTheme(theme.mode) === 'dark',
+    [theme.mode]
+  );
+
+  // Apply theme to DOM
   useEffect(() => {
-    localStorage.setItem('theme-customizer', JSON.stringify(theme));
-    
-    // Apply theme mode
     const root = document.documentElement;
+
+    // Apply theme mode class
     root.classList.remove('light', 'dark');
-    
-    if (theme.mode === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.add(prefersDark ? 'dark' : 'light');
-    } else {
-      root.classList.add(theme.mode);
-    }
+    root.classList.add(getEffectiveTheme(theme.mode));
 
     // Apply CSS variables
-    const radiusMap = { sharp: '0', rounded: '0.5rem', full: '9999px' };
-    root.style.setProperty('--radius', radiusMap[theme.shape]);
-    root.style.setProperty('--primary', theme.colors.primary);
-    root.style.setProperty('--accent', theme.colors.accent);
-    root.style.setProperty('--theme-scaling', `${theme.scaling}%`);
-    root.style.setProperty('--border-width', `${theme.borderWidth}px`);
+    const cssVariables: Record<string, string> = {
+      '--radius': RADIUS_MAP[theme.shape],
+      '--primary': theme.colors.primary,
+      '--accent': theme.colors.accent,
+      '--theme-scaling': `${theme.scaling}%`,
+      '--border-width': `${theme.borderWidth}px`,
+    };
+
+    Object.entries(cssVariables).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+
+    // Apply data attributes for other theme properties
+    root.dataset.solidStyle = theme.solidStyle;
+    root.dataset.effectStyle = theme.effectStyle;
+    root.dataset.surface = theme.surface;
+    root.dataset.dataStyle = theme.dataStyle;
+    root.dataset.transition = theme.transition;
+    root.dataset.neutral = theme.colors.neutral;
+    root.dataset.depthEffect = String(theme.depthEffect);
+    root.dataset.noiseEffect = String(theme.noiseEffect);
+
+    // Save to storage
+    saveThemeToStorage(theme);
   }, [theme]);
 
-  const updateTheme = (updates: Partial<ThemeState>) => {
-    setTheme(prev => ({ ...prev, ...updates }));
-  };
+  // Listen to system theme changes
+  useEffect(() => {
+    if (theme.mode !== 'system') return;
 
-  const resetTheme = () => setTheme(defaultTheme);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = () => {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(getSystemTheme());
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme.mode]);
+
+  // Update theme with partial updates
+  const updateTheme = useCallback((updates: Partial<ThemeState>) => {
+    setTheme(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Reset theme to defaults
+  const resetTheme = useCallback(() => {
+    setTheme(defaultTheme);
+  }, []);
+
+  // Toggle between light and dark modes
+  const toggleMode = useCallback(() => {
+    setTheme(prev => ({
+      ...prev,
+      mode: prev.mode === 'dark' ? 'light' : 'dark',
+    }));
+  }, []);
+
+  const contextValue = useMemo<ThemeContextType>(
+    () => ({
+      theme,
+      setTheme,
+      updateTheme,
+      resetTheme,
+      isDark,
+      toggleMode,
+    }),
+    [theme, updateTheme, resetTheme, isDark, toggleMode]
+  );
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, updateTheme, resetTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
+// ============================================================================
+// HOOK
+// ============================================================================
+
+export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  
   return context;
+};
+
+// ============================================================================
+// UTILITY HOOKS
+// ============================================================================
+
+export const useThemeMode = () => {
+  const { theme, updateTheme, isDark } = useTheme();
+  
+  const setMode = useCallback(
+    (mode: ThemeMode) => updateTheme({ mode }),
+    [updateTheme]
+  );
+  
+  return { mode: theme.mode, setMode, isDark };
+};
+
+export const useThemeColors = () => {
+  const { theme, updateTheme } = useTheme();
+  
+  const setColors = useCallback(
+    (colors: Partial<ColorPalette>) => {
+      updateTheme({ colors: { ...theme.colors, ...colors } });
+    },
+    [theme.colors, updateTheme]
+  );
+  
+  return { colors: theme.colors, setColors };
+};
+
+export const useThemeShape = () => {
+  const { theme, updateTheme } = useTheme();
+  
+  const setShape = useCallback(
+    (shape: ShapePreset) => updateTheme({ shape }),
+    [updateTheme]
+  );
+  
+  return { shape: theme.shape, setShape };
 };
