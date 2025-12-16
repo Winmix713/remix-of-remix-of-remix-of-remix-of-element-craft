@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo, useEffect as useReactEffect } from 'react';
-import { HistoryState, HistoryEntry, pushToHistory, undoHistory, redoHistory, jumpToHistory, useKeyboardShortcuts } from '@/hooks/useHistory';
+import { HistoryState, pushToHistory, undoHistory, redoHistory, jumpToHistory, useKeyboardShortcuts } from '@/hooks/useHistory';
 
 export type EffectType = 'glow' | 'glass' | 'neomorph' | 'clay';
 export type ThemeModeType = 'dark' | 'light' | 'auto';
-
 export type GlowAnimationType = 'none' | 'pulse' | 'breathe' | 'wave';
 
 export interface GlowSettings {
@@ -75,7 +74,6 @@ interface EffectContextType {
   getActiveEffectsCount: () => number;
   getOklchColor: () => string;
   generateCSS: () => string;
-  // History
   history: HistoryState<EffectState>;
   undo: () => void;
   redo: () => void;
@@ -141,23 +139,40 @@ const defaultState: EffectState = {
   claySettings: defaultClaySettings,
 };
 
+const STORAGE_KEY = 'effect-editor';
+
 const EffectContext = createContext<EffectContextType | undefined>(undefined);
 
 export const EffectProvider = ({ children }: { children: ReactNode }) => {
   const [historyState, setHistoryState] = useState<HistoryState<EffectState>>(() => {
-    const stored = localStorage.getItem('effect-editor');
-    const initialState = stored ? { ...defaultState, ...JSON.parse(stored) } : defaultState;
-    return {
-      past: [],
-      present: initialState,
-      future: [],
-    };
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const initialState = stored 
+        ? { ...defaultState, ...JSON.parse(stored) } 
+        : defaultState;
+      return {
+        past: [],
+        present: initialState,
+        future: [],
+      };
+    } catch (error) {
+      console.error('Failed to load saved state:', error);
+      return {
+        past: [],
+        present: defaultState,
+        future: [],
+      };
+    }
   });
 
   const state = historyState.present;
 
   useReactEffect(() => {
-    localStorage.setItem('effect-editor', JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error('Failed to save state:', error);
+    }
   }, [state]);
 
   const pushHistory = useCallback((newState: EffectState, label: string) => {
@@ -165,17 +180,11 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const undo = useCallback(() => {
-    setHistoryState(prev => {
-      const result = undoHistory(prev);
-      return result || prev;
-    });
+    setHistoryState(prev => undoHistory(prev) || prev);
   }, []);
 
   const redo = useCallback(() => {
-    setHistoryState(prev => {
-      const result = redoHistory(prev);
-      return result || prev;
-    });
+    setHistoryState(prev => redoHistory(prev) || prev);
   }, []);
 
   const canUndo = historyState.past.length > 0;
@@ -184,10 +193,7 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   useKeyboardShortcuts(undo, redo, canUndo, canRedo);
 
   const jumpToHistoryEntry = useCallback((id: string) => {
-    setHistoryState(prev => {
-      const result = jumpToHistory(prev, id);
-      return result || prev;
-    });
+    setHistoryState(prev => jumpToHistory(prev, id) || prev);
   }, []);
 
   const clearHistory = useCallback(() => {
@@ -332,6 +338,8 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
 
 export const useEffects = () => {
   const context = useContext(EffectContext);
-  if (!context) throw new Error('useEffects must be used within EffectProvider');
+  if (!context) {
+    throw new Error('useEffects must be used within EffectProvider');
+  }
   return context;
 };
