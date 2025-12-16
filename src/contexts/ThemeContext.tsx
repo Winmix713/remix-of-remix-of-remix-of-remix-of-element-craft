@@ -235,7 +235,7 @@ export const defaultEffectState: EffectState = {
   claySettings: defaultClaySettings,
 };
 
-const defaultThemeConfig: ThemeConfig = {
+export const defaultThemeConfig: ThemeConfig = {
   mode: 'dark',
   shape: 'rounded',
   colors: {
@@ -535,8 +535,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<ThemeConfig>(() => {
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      return stored ? { ...defaultThemeConfig, ...JSON.parse(stored) } : defaultThemeConfig;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure all required fields exist by merging with defaults
+        return {
+          ...defaultThemeConfig,
+          ...parsed,
+          colors: {
+            ...defaultThemeConfig.colors,
+            ...(parsed.colors || {}),
+          },
+        };
+      }
+      return defaultThemeConfig;
     } catch {
+      // Clear corrupted data
+      localStorage.removeItem(THEME_STORAGE_KEY);
       return defaultThemeConfig;
     }
   });
@@ -546,11 +560,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [theme]);
 
   const updateTheme = useCallback((updates: Partial<ThemeConfig>) => {
-    setTheme(prev => ({ ...prev, ...updates }));
+    setTheme(prev => ({
+      ...prev,
+      ...updates,
+      colors: updates.colors ? { ...prev.colors, ...updates.colors } : prev.colors,
+    }));
   }, []);
 
   const resetTheme = useCallback(() => {
     setTheme(defaultThemeConfig);
+    localStorage.removeItem(THEME_STORAGE_KEY);
   }, []);
 
   const value = useMemo(() => ({ theme, updateTheme, resetTheme }), [theme, updateTheme, resetTheme]);
@@ -577,7 +596,13 @@ export const useEffects = (): EffectContextType => {
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
+    // Return safe defaults if used outside provider (shouldn't happen in production)
+    console.warn('useTheme must be used within ThemeProvider - using defaults');
+    return {
+      theme: defaultThemeConfig,
+      updateTheme: () => {},
+      resetTheme: () => {},
+    };
   }
   return context;
 };
