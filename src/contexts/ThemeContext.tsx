@@ -22,9 +22,18 @@ import {
 
 export type EffectType = 'glow' | 'glass' | 'neomorph' | 'clay';
 export type ThemeModeType = 'dark' | 'light' | 'auto';
+export type ThemeMode = ThemeModeType; // Alias for compatibility
 export type GlowAnimationType = 'none' | 'pulse' | 'breathe' | 'wave';
 export type ShapeType = 'flat' | 'concave' | 'convex' | 'pressed';
 export type SurfaceTexture = 'smooth' | 'matte' | 'glossy';
+
+// Theme customizer types
+export type ShapePreset = 'rounded' | 'sharp' | 'circular' | 'custom';
+export type SolidStyle = 'fill' | 'outline' | 'ghost';
+export type EffectStyle = 'shadow' | 'glow' | 'none';
+export type SurfaceStyle = 'flat' | 'gradient' | 'textured';
+export type DataStyle = 'bars' | 'lines' | 'areas' | 'mixed';
+export type TransitionStyle = 'smooth' | 'snappy' | 'elastic';
 
 export interface GlowSettings {
   lightness: number;
@@ -68,6 +77,10 @@ export interface ClaySettings {
   shadowColor: string;
   surfaceTexture: SurfaceTexture;
   bendAngle: number;
+  // Additional properties for ClayEditor
+  opacity?: number;
+  blur?: number;
+  shadowDirection?: number;
 }
 
 export interface EffectState {
@@ -158,6 +171,9 @@ const defaultClaySettings: ClaySettings = {
   shadowColor: '#000000',
   surfaceTexture: 'smooth',
   bendAngle: 0,
+  opacity: 100,
+  blur: 20,
+  shadowDirection: 135,
 };
 
 export const defaultEffectState: EffectState = {
@@ -453,6 +469,9 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// Alias for compatibility
+export const ThemeProvider = EffectProvider;
+
 // ============================================================================
 // HOOK
 // ============================================================================
@@ -466,6 +485,9 @@ export const useEffects = (): EffectContextType => {
   
   return context;
 };
+
+// Alias for compatibility
+export const useTheme = useEffects;
 
 // ============================================================================
 // UTILITY HOOKS
