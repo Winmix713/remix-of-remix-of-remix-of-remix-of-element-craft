@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects } from '@/contexts/ThemeContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { GlowEditor } from './GlowEditor';
 import { GlassEditor } from './GlassEditor';

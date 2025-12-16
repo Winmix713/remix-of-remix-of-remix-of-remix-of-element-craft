@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects } from '@/contexts/ThemeContext';
 import { Copy, Download, Code, FileJson, Palette, Check, LucideIcon } from 'lucide-react';
 import { useState, useMemo, useCallback, memo } from 'react';
 import { toast } from '@/hooks/use-toast';

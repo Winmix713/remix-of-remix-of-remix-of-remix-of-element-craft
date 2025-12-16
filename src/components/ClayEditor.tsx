@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects, ShadowDirection } from '@/contexts/ThemeContext';
 import { Slider } from './ui/slider';
 import { HexColorPicker } from 'react-colorful';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -11,7 +11,6 @@ import { Check, Copy } from 'lucide-react';
 // ============================================================================
 
 type SurfaceTexture = 'smooth' | 'matte' | 'glossy';
-type ShadowDirection = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 interface ClayPreset {
   depth: number;

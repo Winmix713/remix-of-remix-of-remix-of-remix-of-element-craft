@@ -1,4 +1,4 @@
-import { useEffects, GlassSettings, NeomorphSettings, ClaySettings, GlowSettings } from '@/contexts/EffectContext';
+import { useEffects, GlassSettings, NeomorphSettings, ClaySettings, GlowSettings } from '@/contexts/ThemeContext';
 import { Sparkles, Check, Save, Upload, Trash2, Download, LucideIcon } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { toast } from '@/hooks/use-toast';
