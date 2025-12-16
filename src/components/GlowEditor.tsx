@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, memo } from 'react';
-import { useEffects, GlowAnimationType } from '@/contexts/EffectContext';
+import { useEffects, GlowAnimationType } from '@/contexts/ThemeContext';
 import { ChevronDown, Code, RotateCcw, Sparkles, LucideIcon } from 'lucide-react';
 import { Slider } from './ui/slider';
 import { Switch } from './ui/switch';

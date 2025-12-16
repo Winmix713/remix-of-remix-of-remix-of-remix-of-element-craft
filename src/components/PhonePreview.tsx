@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects } from '@/contexts/ThemeContext';
 import { Move, Smartphone, LayoutDashboard, User, CreditCard } from 'lucide-react';
 import Draggable from 'react-draggable';
 import { useRef, useState } from 'react';

@@ -1,5 +1,4 @@
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { EffectProvider } from "@/contexts/EffectContext";
+import { ThemeProvider, EffectProvider } from "@/contexts/ThemeContext";
 import { MultiEffectEditor } from "@/components/MultiEffectEditor";
 import { EffectEditorTabs } from "@/components/EffectEditorTabs";
 import { PhonePreview } from "@/components/PhonePreview";

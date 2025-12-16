@@ -1,4 +1,4 @@
-import { useEffects, EffectType } from '@/contexts/EffectContext';
+import { useEffects, EffectType } from '@/contexts/ThemeContext';
 import { Sparkles, GlassWater, Layers, Palette, Sun, Moon, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useCallback } from 'react';

@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects } from '@/contexts/ThemeContext';
 import { History, Undo2, Redo2, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';

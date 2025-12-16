@@ -17,23 +17,30 @@ import {
 } from '@/hooks/useHistory';
 
 // ============================================================================
-// TYPES
+// EFFECT TYPES
 // ============================================================================
 
 export type EffectType = 'glow' | 'glass' | 'neomorph' | 'clay';
 export type ThemeModeType = 'dark' | 'light' | 'auto';
-export type ThemeMode = ThemeModeType; // Alias for compatibility
 export type GlowAnimationType = 'none' | 'pulse' | 'breathe' | 'wave';
 export type ShapeType = 'flat' | 'concave' | 'convex' | 'pressed';
 export type SurfaceTexture = 'smooth' | 'matte' | 'glossy';
 
-// Theme customizer types
-export type ShapePreset = 'rounded' | 'sharp' | 'circular' | 'custom';
-export type SolidStyle = 'fill' | 'outline' | 'ghost';
-export type EffectStyle = 'shadow' | 'glow' | 'none';
-export type SurfaceStyle = 'flat' | 'gradient' | 'textured';
-export type DataStyle = 'bars' | 'lines' | 'areas' | 'mixed';
-export type TransitionStyle = 'smooth' | 'snappy' | 'elastic';
+// ============================================================================
+// THEME CUSTOMIZER TYPES
+// ============================================================================
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ShapePreset = 'sharp' | 'rounded' | 'full';
+export type SolidStyle = 'color' | 'inverse' | 'contrast';
+export type EffectStyle = 'flat' | 'plastic';
+export type SurfaceStyle = 'filled' | 'translucent';
+export type DataStyle = 'categorical' | 'divergent' | 'sequential';
+export type TransitionStyle = 'all' | 'micro' | 'macro' | 'none';
+
+// ============================================================================
+// EFFECT INTERFACES
+// ============================================================================
 
 export interface GlowSettings {
   lightness: number;
@@ -69,6 +76,8 @@ export interface NeomorphSettings {
   surfaceColor: string;
 }
 
+export type ShadowDirection = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 export interface ClaySettings {
   depth: number;
   spread: number;
@@ -77,10 +86,9 @@ export interface ClaySettings {
   shadowColor: string;
   surfaceTexture: SurfaceTexture;
   bendAngle: number;
-  // Additional properties for ClayEditor
   opacity?: number;
   blur?: number;
-  shadowDirection?: number;
+  shadowDirection?: ShadowDirection;
 }
 
 export interface EffectState {
@@ -93,6 +101,35 @@ export interface EffectState {
   neomorphSettings: NeomorphSettings;
   claySettings: ClaySettings;
 }
+
+// ============================================================================
+// THEME CONFIG INTERFACE
+// ============================================================================
+
+export interface ThemeConfig {
+  mode: ThemeMode;
+  shape: ShapePreset;
+  colors: {
+    primary: string;
+    accent: string;
+    neutral: 'slate' | 'gray' | 'zinc';
+  };
+  solidStyle: SolidStyle;
+  effectStyle: EffectStyle;
+  surface: SurfaceStyle;
+  scaling: number;
+  dataStyle: DataStyle;
+  transition: TransitionStyle;
+  borderWidth: number;
+  depthEffect: boolean;
+  noiseEffect: boolean;
+  fieldBaseSize: number;
+  selectorBaseSize: number;
+}
+
+// ============================================================================
+// CONTEXT TYPES
+// ============================================================================
 
 interface EffectContextType {
   state: EffectState;
@@ -111,7 +148,6 @@ interface EffectContextType {
   generateCSS: () => string;
   exportState: () => string;
   importState: (jsonString: string) => boolean;
-  // History
   history: HistoryState<EffectState>;
   undo: () => void;
   redo: () => void;
@@ -121,11 +157,18 @@ interface EffectContextType {
   clearHistory: () => void;
 }
 
+interface ThemeContextType {
+  theme: ThemeConfig;
+  updateTheme: (updates: Partial<ThemeConfig>) => void;
+  resetTheme: () => void;
+}
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const STORAGE_KEY = 'effect-editor';
+const THEME_STORAGE_KEY = 'theme-customizer';
 const DEFAULT_BLUR_X = -590;
 const DEFAULT_BLUR_Y = -1070;
 
@@ -173,7 +216,7 @@ const defaultClaySettings: ClaySettings = {
   bendAngle: 0,
   opacity: 100,
   blur: 20,
-  shadowDirection: 135,
+  shadowDirection: 'bottom-right',
 };
 
 export const defaultEffectState: EffectState = {
@@ -192,11 +235,33 @@ export const defaultEffectState: EffectState = {
   claySettings: defaultClaySettings,
 };
 
+const defaultThemeConfig: ThemeConfig = {
+  mode: 'dark',
+  shape: 'rounded',
+  colors: {
+    primary: '217 91% 60%',
+    accent: '280 85% 65%',
+    neutral: 'slate',
+  },
+  solidStyle: 'color',
+  effectStyle: 'flat',
+  surface: 'filled',
+  scaling: 100,
+  dataStyle: 'categorical',
+  transition: 'all',
+  borderWidth: 1,
+  depthEffect: false,
+  noiseEffect: false,
+  fieldBaseSize: 4,
+  selectorBaseSize: 4,
+};
+
 // ============================================================================
-// CONTEXT
+// CONTEXTS
 // ============================================================================
 
 const EffectContext = createContext<EffectContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // ============================================================================
 // UTILITIES
@@ -206,7 +271,6 @@ const loadStateFromStorage = (): EffectState => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return defaultEffectState;
-    
     const parsed = JSON.parse(stored);
     return { ...defaultEffectState, ...parsed };
   } catch (error) {
@@ -235,7 +299,7 @@ const formatOklch = (lightness: number, chroma: number, hue: number): string => 
 };
 
 // ============================================================================
-// PROVIDER
+// EFFECT PROVIDER
 // ============================================================================
 
 export const EffectProvider = ({ children }: { children: ReactNode }) => {
@@ -250,12 +314,10 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
 
   const state = historyState.present;
 
-  // Persist state to storage
   useEffect(() => {
     saveStateToStorage(state);
   }, [state]);
 
-  // History management
   const pushHistory = useCallback((newState: EffectState, label: string) => {
     setHistoryState(prev => pushToHistory(prev, newState, label));
   }, []);
@@ -271,7 +333,6 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   const canUndo = historyState.past.length > 0;
   const canRedo = historyState.future.length > 0;
 
-  // Keyboard shortcuts
   useKeyboardShortcuts(undo, redo, canUndo, canRedo);
 
   const jumpToHistoryEntry = useCallback((id: string) => {
@@ -286,7 +347,6 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, []);
 
-  // State mutation functions
   const togglePower = useCallback(() => {
     const newState = { ...state, powerOn: !state.powerOn };
     pushHistory(newState, `Power ${newState.powerOn ? 'on' : 'off'}`);
@@ -369,7 +429,6 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     pushHistory(defaultEffectState, 'Reset to defaults');
   }, [pushHistory]);
 
-  // Utility functions
   const getActiveEffectsCount = useCallback((): number => {
     return Object.values(state.activeEffects).filter(Boolean).length;
   }, [state.activeEffects]);
@@ -411,7 +470,6 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [pushHistory]);
 
-  // Context value
   const contextValue = useMemo<EffectContextType>(() => ({
     state,
     togglePower,
@@ -469,25 +527,60 @@ export const EffectProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Alias for compatibility
-export const ThemeProvider = EffectProvider;
+// ============================================================================
+// THEME PROVIDER
+// ============================================================================
+
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [theme, setTheme] = useState<ThemeConfig>(() => {
+    try {
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      return stored ? { ...defaultThemeConfig, ...JSON.parse(stored) } : defaultThemeConfig;
+    } catch {
+      return defaultThemeConfig;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
+  }, [theme]);
+
+  const updateTheme = useCallback((updates: Partial<ThemeConfig>) => {
+    setTheme(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  const resetTheme = useCallback(() => {
+    setTheme(defaultThemeConfig);
+  }, []);
+
+  const value = useMemo(() => ({ theme, updateTheme, resetTheme }), [theme, updateTheme, resetTheme]);
+
+  return (
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
 
 // ============================================================================
-// HOOK
+// HOOKS
 // ============================================================================
 
 export const useEffects = (): EffectContextType => {
   const context = useContext(EffectContext);
-  
   if (!context) {
     throw new Error('useEffects must be used within EffectProvider');
   }
-  
   return context;
 };
 
-// Alias for compatibility
-export const useTheme = useEffects;
+export const useTheme = (): ThemeContextType => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  return context;
+};
 
 // ============================================================================
 // UTILITY HOOKS

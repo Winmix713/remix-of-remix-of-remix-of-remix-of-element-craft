@@ -97,7 +97,7 @@ const AppProviders = memo<AppProvidersProps>(({ children }) => (
       <Toaster />
       <Sonner />
       {process.env.NODE_ENV === "development" && (
-        <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
       )}
     </TooltipProvider>
   </QueryClientProvider>
@@ -149,12 +149,12 @@ export default App;
 
 // ==================== PERFORMANCE MONITORING (OPTIONAL) ====================
 if (process.env.NODE_ENV === "development") {
-  // Web Vitals monitoring
-  import("web-vitals").then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-    getCLS(console.log);
-    getFID(console.log);
-    getFCP(console.log);
-    getLCP(console.log);
-    getTTFB(console.log);
+  // Web Vitals monitoring (v5 API)
+  import("web-vitals").then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
+    onCLS(console.log);
+    onINP(console.log);
+    onFCP(console.log);
+    onLCP(console.log);
+    onTTFB(console.log);
   });
 }

@@ -1,4 +1,4 @@
-import { useEffects } from '@/contexts/EffectContext';
+import { useEffects } from '@/contexts/ThemeContext';
 import { Slider } from './ui/slider';
 import { HexColorPicker } from 'react-colorful';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
