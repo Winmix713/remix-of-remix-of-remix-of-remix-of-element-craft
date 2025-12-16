@@ -1,4 +1,5 @@
 import { ThemeProvider, EffectProvider } from "@/contexts/ThemeContext";
+import { SelectionProvider } from "@/contexts/SelectionContext";
 import { MultiEffectEditor } from "@/components/MultiEffectEditor";
 import { EffectEditorTabs } from "@/components/EffectEditorTabs";
 import { PhonePreview } from "@/components/PhonePreview";
@@ -6,12 +7,13 @@ import { ThemeCustomizer } from "@/components/ThemeCustomizer";
 import { PropertyInspector } from "@/components/PropertyInspector";
 import { PresetsGallery } from "@/components/PresetsGallery";
 import { ExportPanel } from "@/components/ExportPanel";
+import { QuickActionsPanel } from "@/components/QuickActionsPanel";
 import { useState } from "react";
-import { Settings, Layers, Sparkles, Code } from "lucide-react";
+import { Settings, Layers, Sparkles, Code, Zap } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type RightPanel = 'theme' | 'inspector' | 'presets' | 'export';
+type RightPanel = 'actions' | 'theme' | 'inspector' | 'presets' | 'export';
 
 const Index = () => {
   const [rightPanel, setRightPanel] = useState<RightPanel>('presets');
@@ -19,6 +21,7 @@ const Index = () => {
   return (
     <ThemeProvider>
       <EffectProvider>
+        <SelectionProvider>
         <div className="min-h-screen w-full bg-background text-foreground antialiased font-outfit">
           {/* Background gradient */}
           <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-violet/5 pointer-events-none" />
@@ -83,7 +86,11 @@ const Index = () => {
             <section className="w-1/2 h-full p-4 overflow-hidden flex flex-col gap-4">
               {/* Tabs */}
               <Tabs value={rightPanel} onValueChange={(v) => setRightPanel(v as RightPanel)} className="w-full">
-                <TabsList className="w-full bg-secondary/50 border border-border/80 grid grid-cols-4">
+                <TabsList className="w-full bg-secondary/50 border border-border/80 grid grid-cols-5">
+                  <TabsTrigger value="actions" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span className="text-xs">Actions</span>
+                  </TabsTrigger>
                   <TabsTrigger value="presets" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span className="text-xs">Presets</span>
@@ -113,6 +120,7 @@ const Index = () => {
                 {/* Panel content */}
                 <div className="flex-1 rounded-2xl border border-border/80 bg-card/80 backdrop-blur-xl p-4 shadow-lg overflow-hidden">
                   <ScrollArea className="h-full pr-2">
+                    {rightPanel === 'actions' && <QuickActionsPanel />}
                     {rightPanel === 'presets' && <PresetsGallery />}
                     {rightPanel === 'theme' && <ThemeCustomizer />}
                     {rightPanel === 'inspector' && <PropertyInspector />}
@@ -123,6 +131,7 @@ const Index = () => {
             </section>
           </div>
         </div>
+        </SelectionProvider>
       </EffectProvider>
     </ThemeProvider>
   );

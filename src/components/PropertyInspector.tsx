@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   RotateCcw, MousePointer2, Save, MoreHorizontal, X, ChevronDown,
   Laptop, UnfoldHorizontal, UnfoldVertical, Scan, Square, Eye, Image, Move,
   Zap, RotateCw, Maximize, WandSparkles, Sparkles, Paperclip, Figma, Send,
   AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter, Layers, Circle,
-  Droplet, Sun, Contrast, FlipHorizontal, GripVertical, Hash
+  Droplet, Sun, Contrast, FlipHorizontal, GripVertical, Hash, Link2, Copy, Check
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -14,11 +14,19 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { HexColorPicker } from 'react-colorful';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { useEffects } from '@/contexts/ThemeContext';
+import { toast } from '@/hooks/use-toast';
 
 type TabMode = 'EDIT' | 'PROMPT' | 'CODE';
 
 export const PropertyInspector = () => {
+  const { state, updateGlassSettings, updateGlowSettings, undo, canUndo, history } = useEffects();
+  
   const [activeTab, setActiveTab] = useState<TabMode>('EDIT');
+  const [syncWithEffects, setSyncWithEffects] = useState(true);
+  const [copied, setCopied] = useState(false);
+  
+  // Local inspector state - synced with effects when enabled
   const [opacity, setOpacity] = useState(100);
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
@@ -33,7 +41,7 @@ export const PropertyInspector = () => {
   const [promptText, setPromptText] = useState('');
   const [codeText, setCodeText] = useState('<h2 class="text-[18px] md:text-[20px] font-semibold tracking-tight pr-2 pb-3 pl-2">Layers</h2>');
   
-  // New states
+  // Colors & Effects - synced with effects context
   const [bgColor, setBgColor] = useState<string | null>(null);
   const [borderColor, setBorderColor] = useState<string | null>(null);
   const [ringColor, setRingColor] = useState<string | null>(null);
@@ -50,6 +58,87 @@ export const PropertyInspector = () => {
   const [inlineCSS, setInlineCSS] = useState('');
   const [elementId, setElementId] = useState('');
   const [openAccordions, setOpenAccordions] = useState<string[]>(['family', 'link', 'text', 'margin', 'padding']);
+  
+  // Sync blur/saturation from effects context
+  useEffect(() => {
+    if (syncWithEffects && state.activeEffects.glass) {
+      setBlur(state.glassSettings.blur);
+      setBackdropBlur(state.glassSettings.blur);
+      setSaturation(state.glassSettings.saturation);
+    }
+  }, [state.glassSettings, state.activeEffects.glass, syncWithEffects]);
+  
+  // Update effects when inspector values change (bidirectional sync)
+  const handleBlurChange = useCallback((value: number) => {
+    setBlur(value);
+    if (syncWithEffects && state.activeEffects.glass) {
+      updateGlassSettings({ blur: value });
+    }
+  }, [syncWithEffects, state.activeEffects.glass, updateGlassSettings]);
+  
+  const handleBackdropBlurChange = useCallback((value: number) => {
+    setBackdropBlur(value);
+    if (syncWithEffects && state.activeEffects.glass) {
+      updateGlassSettings({ blur: value });
+    }
+  }, [syncWithEffects, state.activeEffects.glass, updateGlassSettings]);
+  
+  const handleSaturationChange = useCallback((value: number) => {
+    setSaturation(value);
+    if (syncWithEffects && state.activeEffects.glass) {
+      updateGlassSettings({ saturation: value });
+    }
+  }, [syncWithEffects, state.activeEffects.glass, updateGlassSettings]);
+  
+  // Generate CSS from current inspector values
+  const generatedCSS = useMemo(() => {
+    const lines: string[] = [];
+    if (opacity !== 100) lines.push(`opacity: ${opacity / 100};`);
+    if (blur) lines.push(`filter: blur(${blur}px);`);
+    if (backdropBlur) lines.push(`backdrop-filter: blur(${backdropBlur}px);`);
+    if (brightness !== 100) lines.push(`filter: brightness(${brightness}%);`);
+    if (saturation !== 100) lines.push(`filter: saturate(${saturation}%);`);
+    if (hueRotate) lines.push(`filter: hue-rotate(${hueRotate}deg);`);
+    if (translateX || translateY) lines.push(`transform: translate(${translateX}px, ${translateY}px);`);
+    if (rotate) lines.push(`transform: rotate(${rotate}deg);`);
+    if (scale !== 100) lines.push(`transform: scale(${scale / 100});`);
+    if (bgColor) lines.push(`background-color: ${bgColor};`);
+    if (borderColor) lines.push(`border-color: ${borderColor};`);
+    if (textColor) lines.push(`color: ${textColor};`);
+    return lines.join('\n');
+  }, [opacity, blur, backdropBlur, brightness, saturation, hueRotate, translateX, translateY, rotate, scale, bgColor, borderColor, textColor]);
+  
+  const handleCopyCSS = useCallback(() => {
+    navigator.clipboard.writeText(generatedCSS);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: "Copied!", description: "CSS copied to clipboard." });
+  }, [generatedCSS]);
+  
+  const handleReset = useCallback(() => {
+    setOpacity(100);
+    setBlur(0);
+    setBackdropBlur(0);
+    setBrightness(100);
+    setSaturation(100);
+    setHueRotate(0);
+    setGrayscale(0);
+    setInvert(0);
+    setTranslateX(0);
+    setTranslateY(0);
+    setRotate(0);
+    setScale(100);
+    setSkewX(0);
+    setSkewY(0);
+    setRotateX(0);
+    setRotateY(0);
+    setRotateZ(0);
+    setPerspective(0);
+    setBgColor(null);
+    setBorderColor(null);
+    setTextColor(null);
+    toast({ title: "Reset", description: "Inspector values reset to defaults." });
+  }, []);
 
   const ColorButton = ({ 
     color, 
@@ -107,11 +196,43 @@ export const PropertyInspector = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          {[RotateCcw, MousePointer2, Save, MoreHorizontal, X].map((Icon, i) => (
-            <Button key={i} variant="ghost" size="icon" className="h-6 w-6 rounded-full">
-              <Icon className="w-3 h-3" />
-            </Button>
-          ))}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 rounded-full" 
+            onClick={handleReset}
+            title="Reset values"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-6 w-6 rounded-full ${syncWithEffects ? 'text-primary' : ''}`}
+            onClick={() => setSyncWithEffects(!syncWithEffects)}
+            title={syncWithEffects ? "Synced with effects" : "Not synced"}
+          >
+            <Link2 className="w-3 h-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 rounded-full"
+            onClick={handleCopyCSS}
+            title="Copy CSS"
+          >
+            {copied ? <Check className="w-3 h-3 text-emerald" /> : <Copy className="w-3 h-3" />}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 rounded-full"
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </Button>
         </div>
       </div>
 
@@ -582,10 +703,10 @@ export const PropertyInspector = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <SliderControl icon={<Droplet className="w-2.5 h-2.5" />} label="Blur" value={blur} onChange={setBlur} min={0} max={100} unit="px" />
-                  <SliderControl icon={<Droplet className="w-2.5 h-2.5" />} label="Backdrop Blur" value={backdropBlur} onChange={setBackdropBlur} min={0} max={100} unit="px" />
+                  <SliderControl icon={<Droplet className="w-2.5 h-2.5" />} label="Blur" value={blur} onChange={handleBlurChange} min={0} max={100} unit="px" />
+                  <SliderControl icon={<Droplet className="w-2.5 h-2.5" />} label="Backdrop Blur" value={backdropBlur} onChange={handleBackdropBlurChange} min={0} max={100} unit="px" />
                   <SliderControl icon={<Contrast className="w-2.5 h-2.5" />} label="Hue Rotate" value={hueRotate} onChange={setHueRotate} min={0} max={360} unit="°" />
-                  <SliderControl icon={<Sun className="w-2.5 h-2.5" />} label="Saturation" value={saturation} onChange={setSaturation} min={0} max={200} unit="%" />
+                  <SliderControl icon={<Sun className="w-2.5 h-2.5" />} label="Saturation" value={saturation} onChange={handleSaturationChange} min={0} max={200} unit="%" />
                   <SliderControl icon={<Sun className="w-2.5 h-2.5" />} label="Brightness" value={brightness} onChange={setBrightness} min={0} max={200} unit="%" />
                   <SliderControl icon={<FlipHorizontal className="w-2.5 h-2.5" />} label="Grayscale" value={grayscale} onChange={setGrayscale} min={0} max={100} unit="%" />
                   <SliderControl icon={<FlipHorizontal className="w-2.5 h-2.5" />} label="Invert" value={invert} onChange={setInvert} min={0} max={100} unit="%" />
