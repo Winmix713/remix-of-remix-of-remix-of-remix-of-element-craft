@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, memo } from 'react';
 import { useEffects, GlowAnimationType } from '@/contexts/ThemeContext';
-import { ChevronDown, Code, RotateCcw, Sparkles, LucideIcon } from 'lucide-react';
+import { ChevronDown, Code, RotateCcw, Sparkles, LucideIcon, Layers } from 'lucide-react';
 import { Slider } from './ui/slider';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -55,6 +55,10 @@ type GlowSettings = {
   animation: GlowAnimationType;
   animationSpeed: number;
   animationIntensity: number;
+  maskSize: number;
+  glowScale: number;
+  noiseEnabled: boolean;
+  noiseIntensity: number;
 };
 
 type BlurSettings = {
@@ -466,13 +470,80 @@ export const GlowEditor = memo(() => {
       </div>
 
       {/* Forma konfiguráció */}
-      <CollapsibleSection
-        title="Forma konfiguráció"
-        open={shapeOpen}
-        onOpenChange={setShapeOpen}
-      >
-        <p className="text-xs text-zinc-500">Forma vezérlők hamarosan...</p>
-      </CollapsibleSection>
+      <div className="pt-4 border-t border-white/5">
+        <CollapsibleSection
+          title="Forma konfiguráció"
+          icon={Layers}
+          open={shapeOpen}
+          onOpenChange={setShapeOpen}
+        >
+          <div className="space-y-4">
+            {/* Mask Size */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-zinc-500">
+                <span>Maszk méret</span>
+                <span>{(state.glowSettings.maskSize * 100).toFixed(0)}%</span>
+              </div>
+              <Slider
+                value={[state.glowSettings.maskSize * 100]}
+                onValueChange={([val]) => updateGlowSettings({ maskSize: val / 100 })}
+                min={10}
+                max={100}
+                step={5}
+                className="w-full"
+                aria-label="Maszk méret"
+              />
+            </div>
+
+            {/* Glow Scale */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-zinc-500">
+                <span>Fény skála</span>
+                <span>{state.glowSettings.glowScale.toFixed(2)}x</span>
+              </div>
+              <Slider
+                value={[state.glowSettings.glowScale * 100]}
+                onValueChange={([val]) => updateGlowSettings({ glowScale: val / 100 })}
+                min={50}
+                max={150}
+                step={5}
+                className="w-full"
+                aria-label="Fény skála"
+              />
+            </div>
+
+            {/* Noise Toggle */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-zinc-500">Zaj textúra</span>
+              <Switch
+                checked={state.glowSettings.noiseEnabled}
+                onCheckedChange={(checked) => updateGlowSettings({ noiseEnabled: checked })}
+                className="data-[state=checked]:bg-amber-500"
+                aria-label="Zaj textúra be/ki"
+              />
+            </div>
+
+            {/* Noise Intensity */}
+            {state.glowSettings.noiseEnabled && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-zinc-500">
+                  <span>Zaj intenzitás</span>
+                  <span>{(state.glowSettings.noiseIntensity * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[state.glowSettings.noiseIntensity * 100]}
+                  onValueChange={([val]) => updateGlowSettings({ noiseIntensity: val / 100 })}
+                  min={5}
+                  max={80}
+                  step={5}
+                  className="w-full"
+                  aria-label="Zaj intenzitás"
+                />
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+      </div>
 
       {/* Háttér elmosás */}
       <div className="pt-4 border-t border-white/5">

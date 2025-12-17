@@ -1,7 +1,8 @@
 import { useEffects } from '@/contexts/ThemeContext';
-import { Move, Smartphone, LayoutDashboard, User, CreditCard } from 'lucide-react';
+import { Move, Smartphone, LayoutDashboard, User, CreditCard, Shuffle } from 'lucide-react';
 import Draggable from 'react-draggable';
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   OnboardingTemplate, 
   DashboardTemplate, 
@@ -17,8 +18,16 @@ const templates: { id: PreviewTemplate; icon: React.ElementType; label: string }
   { id: 'cards', icon: CreditCard, label: 'Cards' },
 ];
 
+// Random color generator
+const generateRandomColor = () => {
+  const hue = Math.floor(Math.random() * 360);
+  const lightness = 65 + Math.floor(Math.random() * 20);
+  const chroma = 0.15 + Math.random() * 0.15;
+  return { hue, lightness, chroma };
+};
+
 export const PhonePreview = () => {
-  const { state, getOklchColor, updateBlurSettings } = useEffects();
+  const { state, getOklchColor, updateBlurSettings, updateGlowSettings } = useEffects();
   const oklchColor = getOklchColor();
   const { x, y } = state.blurSettings;
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -39,6 +48,18 @@ export const PhonePreview = () => {
       y: defaultY + data.y,
     });
   };
+
+  // Random color handler
+  const handleRandomColor = useCallback(() => {
+    const { hue, lightness, chroma } = generateRandomColor();
+    updateGlowSettings({ hue, lightness, chroma });
+  }, [updateGlowSettings]);
+
+  // Get shape settings with defaults
+  const maskSize = state.glowSettings.maskSize ?? 0.3;
+  const glowScale = state.glowSettings.glowScale ?? 0.9;
+  const noiseEnabled = state.glowSettings.noiseEnabled ?? true;
+  const noiseIntensity = state.glowSettings.noiseIntensity ?? 0.35;
 
   // Calculate glass effect styles
   const glassStyle = state.activeEffects.glass ? {
@@ -107,9 +128,20 @@ export const PhonePreview = () => {
     }
   };
 
+  // Animation variants for glow layers
+  const glowVariants = {
+    initial: { opacity: 0, scale: 0.8 },
+    animate: { 
+      opacity: isDragging ? 0.7 : (state.glowSettings.animationIntensity / 100),
+      scale: glowScale,
+      transition: { duration: 0.3 }
+    },
+    exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
+  };
+
   return (
     <div className="relative flex flex-col items-center gap-4">
-      {/* Template selector */}
+      {/* Template selector with random color button */}
       <div className="flex gap-2 p-1.5 rounded-full bg-card/50 border border-border/50 backdrop-blur-sm">
         {templates.map(({ id, icon: Icon, label }) => (
           <button
@@ -126,16 +158,26 @@ export const PhonePreview = () => {
             <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
+        
+        {/* Random color button */}
+        <button
+          onClick={handleRandomColor}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+          title="Random szín"
+        >
+          <Shuffle className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Phone preview */}
       <div className="relative">
-        {/* Ambient glow */}
-        <div 
+        {/* Ambient glow with motion */}
+        <motion.div 
           className="absolute -inset-10 opacity-70 blur-3xl pointer-events-none"
-          style={{
+          animate={{
             background: `radial-gradient(circle at top, ${state.glowSettings.baseColor}80, transparent 60%)`
           }}
+          transition={{ duration: 0.5 }}
         />
         
         {/* Phone frame */}
@@ -143,91 +185,109 @@ export const PhonePreview = () => {
           <div 
             className="relative w-[375px] h-[812px] rounded-[40px] overflow-hidden shadow-2xl border-4 transition-colors duration-500 bg-background border-border"
           >
-            {/* Draggable Glow layers */}
-            {state.powerOn && state.activeEffects.glow && (
-              <Draggable
-                nodeRef={nodeRef}
-                position={{ x: dragX, y: dragY }}
-                onDrag={handleDrag}
-                onStart={() => setIsDragging(true)}
-                onStop={() => setIsDragging(false)}
-              >
-                <div 
-                  ref={nodeRef}
-                  className={`absolute w-[1700px] h-[2400px] cursor-move z-[1] ${
-                    state.glowSettings.animation === 'pulse' ? 'animate-glow-pulse' :
-                    state.glowSettings.animation === 'breathe' ? 'animate-glow-breathe' :
-                    state.glowSettings.animation === 'wave' ? 'animate-glow-wave' : ''
-                  }`}
-                  style={{
-                    maskImage: 'linear-gradient(black 30%, transparent 100%)',
-                    transform: 'scale(0.9)',
-                    opacity: isDragging ? 0.7 : (state.glowSettings.animationIntensity / 100),
-                    transition: isDragging ? 'none' : 'opacity 0.2s',
-                    left: `${defaultX}px`,
-                    top: `${defaultY}px`,
-                    '--glow-speed': `${state.glowSettings.animationSpeed}s`,
-                  } as React.CSSProperties}
+            {/* Draggable Glow layers with Framer Motion */}
+            <AnimatePresence>
+              {state.powerOn && state.activeEffects.glow && (
+                <Draggable
+                  nodeRef={nodeRef}
+                  position={{ x: dragX, y: dragY }}
+                  onDrag={handleDrag}
+                  onStart={() => setIsDragging(true)}
+                  onStop={() => setIsDragging(false)}
                 >
-                  {/* Húzás jelző */}
-                  <div className={`absolute top-[800px] left-[750px] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
-                    <Move className="w-3 h-3 text-white/60" />
-                    <span className="text-[10px] text-white/60">Húzd a mozgatáshoz</span>
-                  </div>
+                  <motion.div 
+                    ref={nodeRef}
+                    variants={glowVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    className={`absolute w-[1700px] h-[2400px] cursor-move z-[1] ${
+                      state.glowSettings.animation === 'pulse' ? 'animate-glow-pulse' :
+                      state.glowSettings.animation === 'breathe' ? 'animate-glow-breathe' :
+                      state.glowSettings.animation === 'wave' ? 'animate-glow-wave' : ''
+                    }`}
+                    style={{
+                      maskImage: `linear-gradient(black ${maskSize * 100}%, transparent 100%)`,
+                      transition: isDragging ? 'none' : 'opacity 0.2s',
+                      left: `${defaultX}px`,
+                      top: `${defaultY}px`,
+                      '--glow-speed': `${state.glowSettings.animationSpeed}s`,
+                    } as React.CSSProperties}
+                  >
+                    {/* Drag indicator */}
+                    <div className={`absolute top-[800px] left-[750px] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
+                      <Move className="w-3 h-3 text-white/60" />
+                      <span className="text-[10px] text-white/60">Húzd a mozgatáshoz</span>
+                    </div>
 
-                  <div 
-                    className="absolute top-[400px] left-[300px] w-[1800px] rounded-full opacity-40 mix-blend-screen pointer-events-none"
-                    style={{
-                      backgroundColor: oklchColor,
-                      height: '1140px',
-                      filter: 'blur(180px)',
-                    }}
-                  />
-                  <div 
-                    className="absolute top-[600px] left-[460px] w-[1300px] h-[1300px] rounded-full opacity-60 mix-blend-screen pointer-events-none"
-                    style={{
-                      backgroundColor: oklchColor,
-                      filter: 'blur(120px)',
-                    }}
-                  />
-                  <div 
-                    className="absolute top-[700px] left-[560px] w-[1000px] h-[800px] rounded-full mix-blend-screen pointer-events-none"
-                    style={{
-                      backgroundColor: oklchColor,
-                      filter: 'blur(60px)',
-                      opacity: 1,
-                    }}
-                  />
-                  <div 
-                    className="absolute top-[800px] left-[700px] w-[600px] h-[440px] rounded-full mix-blend-normal pointer-events-none"
-                    style={{
-                      backgroundColor: 'rgb(255, 255, 255)',
-                      filter: 'blur(80px)',
-                      opacity: 0.4,
-                    }}
-                  />
-                </div>
-              </Draggable>
-            )}
+                    {/* 4-layer glow effect */}
+                    <motion.div 
+                      className="absolute top-[400px] left-[300px] w-[1800px] rounded-full opacity-40 mix-blend-screen pointer-events-none"
+                      animate={{ backgroundColor: oklchColor }}
+                      transition={{ duration: 0.3 }}
+                      style={{
+                        height: '1140px',
+                        filter: 'blur(180px)',
+                      }}
+                    />
+                    <motion.div 
+                      className="absolute top-[600px] left-[460px] w-[1300px] h-[1300px] rounded-full opacity-60 mix-blend-screen pointer-events-none"
+                      animate={{ backgroundColor: oklchColor }}
+                      transition={{ duration: 0.3 }}
+                      style={{
+                        filter: 'blur(120px)',
+                      }}
+                    />
+                    <motion.div 
+                      className="absolute top-[700px] left-[560px] w-[1000px] h-[800px] rounded-full mix-blend-screen pointer-events-none"
+                      animate={{ backgroundColor: oklchColor }}
+                      transition={{ duration: 0.3 }}
+                      style={{
+                        filter: 'blur(60px)',
+                        opacity: 1,
+                      }}
+                    />
+                    <div 
+                      className="absolute top-[800px] left-[700px] w-[600px] h-[440px] rounded-full mix-blend-normal pointer-events-none"
+                      style={{
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        filter: 'blur(80px)',
+                        opacity: 0.4,
+                      }}
+                    />
+                  </motion.div>
+                </Draggable>
+              )}
+            </AnimatePresence>
 
             {/* Glass effect overlay */}
             {state.powerOn && state.activeEffects.glass && (
-              <div 
+              <motion.div 
                 className="absolute inset-0 z-[2] pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 style={glassStyle}
               />
             )}
 
-            {/* Noise texture overlay */}
-            <div 
-              className="absolute inset-0 w-full h-full pointer-events-none z-[5] mix-blend-overlay"
-              style={{
-                backgroundImage: `url("${noiseUrl}")`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '200px 200px',
-                opacity: 0.35,
-              }}
-            />
+            {/* Noise texture overlay - controlled by settings */}
+            <AnimatePresence>
+              {noiseEnabled && (
+                <motion.div 
+                  className="absolute inset-0 w-full h-full pointer-events-none z-[5] mix-blend-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: noiseIntensity }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{
+                    backgroundImage: `url("${noiseUrl}")`,
+                    backgroundRepeat: 'repeat',
+                    backgroundSize: '200px 200px',
+                  }}
+                />
+              )}
+            </AnimatePresence>
 
             {/* Content Template */}
             {renderTemplate()}

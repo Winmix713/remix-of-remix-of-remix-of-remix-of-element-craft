@@ -69,7 +69,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#10B981',
     },
     settings: {
-      glow: { lightness: 72, chroma: 0.22, hue: 160, baseColor: '#10B981', animation: 'breathe', animationSpeed: 3, animationIntensity: 60 },
+      glow: { lightness: 72, chroma: 0.22, hue: 160, baseColor: '#10B981', animation: 'breathe', animationSpeed: 3, animationIntensity: 60, maskSize: 0.3, glowScale: 0.9, noiseEnabled: true, noiseIntensity: 0.35 },
       glass: { blur: 16, opacity: 15, saturation: 140, borderWidth: 1, borderOpacity: 25, tint: '#10B981', tintStrength: 15 },
       neomorph: { distance: 8, blur: 24, intensity: 40, shape: 'convex', lightSource: 145, surfaceColor: '#0F172A' },
       clay: { depth: 8, spread: 12, borderRadius: 20, highlightColor: '#34D399', shadowColor: '#064E3B', surfaceTexture: 'glossy', bendAngle: 5 },
@@ -85,7 +85,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#F59E0B',
     },
     settings: {
-      glow: { lightness: 78, chroma: 0.24, hue: 35, baseColor: '#F59E0B', animation: 'pulse', animationSpeed: 2, animationIntensity: 50 },
+      glow: { lightness: 78, chroma: 0.24, hue: 35, baseColor: '#F59E0B', animation: 'pulse', animationSpeed: 2, animationIntensity: 50, maskSize: 0.3, glowScale: 0.9, noiseEnabled: true, noiseIntensity: 0.35 },
       glass: { blur: 20, opacity: 25, saturation: 130, borderWidth: 1, borderOpacity: 30, tint: '#FEF3C7', tintStrength: 20 },
       neomorph: { distance: 12, blur: 28, intensity: 55, shape: 'flat', lightSource: 135, surfaceColor: '#1F1F1F' },
       clay: { depth: 12, spread: 15, borderRadius: 28, highlightColor: '#FDE68A', shadowColor: '#78350F', surfaceTexture: 'smooth', bendAngle: 0 },
@@ -101,7 +101,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#8B5CF6',
     },
     settings: {
-      glow: { lightness: 68, chroma: 0.28, hue: 280, baseColor: '#A855F7', animation: 'wave', animationSpeed: 2.5, animationIntensity: 70 },
+      glow: { lightness: 68, chroma: 0.28, hue: 280, baseColor: '#A855F7', animation: 'wave', animationSpeed: 2.5, animationIntensity: 70, maskSize: 0.25, glowScale: 1.0, noiseEnabled: true, noiseIntensity: 0.4 },
       glass: { blur: 12, opacity: 20, saturation: 160, borderWidth: 2, borderOpacity: 40, tint: '#C084FC', tintStrength: 25 },
       neomorph: { distance: 10, blur: 35, intensity: 60, shape: 'convex', lightSource: 120, surfaceColor: '#1E1B4B' },
       clay: { depth: 15, spread: 18, borderRadius: 32, highlightColor: '#E9D5FF', shadowColor: '#4C1D95', surfaceTexture: 'glossy', bendAngle: -5 },
@@ -117,7 +117,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#06B6D4',
     },
     settings: {
-      glow: { lightness: 65, chroma: 0.2, hue: 195, baseColor: '#06B6D4', animation: 'breathe', animationSpeed: 4, animationIntensity: 40 },
+      glow: { lightness: 65, chroma: 0.2, hue: 195, baseColor: '#06B6D4', animation: 'breathe', animationSpeed: 4, animationIntensity: 40, maskSize: 0.35, glowScale: 0.85, noiseEnabled: true, noiseIntensity: 0.3 },
       glass: { blur: 18, opacity: 18, saturation: 150, borderWidth: 1, borderOpacity: 20, tint: '#0891B2', tintStrength: 12 },
       neomorph: { distance: 6, blur: 20, intensity: 35, shape: 'pressed', lightSource: 160, surfaceColor: '#0F172A' },
       clay: { depth: 6, spread: 10, borderRadius: 16, highlightColor: '#67E8F9', shadowColor: '#164E63', surfaceTexture: 'matte', bendAngle: 3 },
@@ -133,7 +133,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#F472B6',
     },
     settings: {
-      glow: { lightness: 75, chroma: 0.18, hue: 350, baseColor: '#FB7185', animation: 'none', animationSpeed: 2, animationIntensity: 50 },
+      glow: { lightness: 75, chroma: 0.18, hue: 350, baseColor: '#FB7185', animation: 'none', animationSpeed: 2, animationIntensity: 50, maskSize: 0.3, glowScale: 0.9, noiseEnabled: false, noiseIntensity: 0.2 },
       glass: { blur: 14, opacity: 22, saturation: 125, borderWidth: 1, borderOpacity: 35, tint: '#FDF2F8', tintStrength: 18 },
       neomorph: { distance: 8, blur: 22, intensity: 45, shape: 'convex', lightSource: 130, surfaceColor: '#2D2D2D' },
       clay: { depth: 10, spread: 14, borderRadius: 24, highlightColor: '#FBCFE8', shadowColor: '#831843', surfaceTexture: 'smooth', bendAngle: 2 },
@@ -149,7 +149,7 @@ const DEFAULT_PRESETS: readonly Preset[] = [
       borderColor: '#3B82F6',
     },
     settings: {
-      glow: { lightness: 55, chroma: 0.15, hue: 220, baseColor: '#3B82F6', animation: 'pulse', animationSpeed: 3, animationIntensity: 30 },
+      glow: { lightness: 55, chroma: 0.15, hue: 220, baseColor: '#3B82F6', animation: 'pulse', animationSpeed: 3, animationIntensity: 30, maskSize: 0.4, glowScale: 0.8, noiseEnabled: true, noiseIntensity: 0.25 },
       glass: { blur: 10, opacity: 12, saturation: 110, borderWidth: 1, borderOpacity: 15, tint: '#1E40AF', tintStrength: 8 },
       neomorph: { distance: 12, blur: 32, intensity: 50, shape: 'flat', lightSource: 145, surfaceColor: '#0F172A' },
       clay: { depth: 8, spread: 10, borderRadius: 20, highlightColor: '#93C5FD', shadowColor: '#1E3A8A', surfaceTexture: 'matte', bendAngle: 0 },

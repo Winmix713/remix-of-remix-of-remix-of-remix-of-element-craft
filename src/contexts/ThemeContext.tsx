@@ -50,6 +50,11 @@ export interface GlowSettings {
   animation: GlowAnimationType;
   animationSpeed: number;
   animationIntensity: number;
+  // Shape configuration
+  maskSize: number;
+  glowScale: number;
+  noiseEnabled: boolean;
+  noiseIntensity: number;
 }
 
 export interface BlurSettings {
@@ -180,6 +185,11 @@ const defaultGlowSettings: GlowSettings = {
   animation: 'none',
   animationSpeed: 2,
   animationIntensity: 50,
+  // Shape defaults
+  maskSize: 0.3,
+  glowScale: 0.9,
+  noiseEnabled: true,
+  noiseIntensity: 0.35,
 };
 
 const defaultBlurSettings: BlurSettings = {
