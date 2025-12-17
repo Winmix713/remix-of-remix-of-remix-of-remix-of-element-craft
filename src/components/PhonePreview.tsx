@@ -169,10 +169,10 @@ export const PhonePreview = () => {
                     '--glow-speed': `${state.glowSettings.animationSpeed}s`,
                   } as React.CSSProperties}
                 >
-                  {/* Drag indicator */}
+                  {/* Húzás jelző */}
                   <div className={`absolute top-[800px] left-[750px] flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10 transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 hover:opacity-100'}`}>
                     <Move className="w-3 h-3 text-white/60" />
-                    <span className="text-[10px] text-white/60">Drag to move</span>
+                    <span className="text-[10px] text-white/60">Húzd a mozgatáshoz</span>
                   </div>
 
                   <div 

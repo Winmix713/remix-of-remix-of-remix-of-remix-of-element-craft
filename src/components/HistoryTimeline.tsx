@@ -34,37 +34,39 @@ export const HistoryTimeline = () => {
   return (
     <div className="w-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
+          <CollapsibleTrigger className="flex items-center gap-2 flex-1">
             <History className="w-4 h-4 text-zinc-400" />
             <span className="text-sm font-medium text-zinc-300">Előzmények</span>
             <span className="text-xs text-zinc-500">({historyCount} lépés)</span>
-          </div>
+          </CollapsibleTrigger>
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 hover:bg-white/10 disabled:opacity-40"
+              size="icon"
+              className="h-7 w-7 hover:bg-white/10 disabled:opacity-40"
               disabled={!canUndo}
               onClick={handleUndo}
               title="Visszavonás (Ctrl+Z)"
               aria-label="Visszavonás"
+              data-testid="button-undo"
             >
               <Undo2 className="w-3.5 h-3.5" />
             </Button>
             <Button
               variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 hover:bg-white/10 disabled:opacity-40"
+              size="icon"
+              className="h-7 w-7 hover:bg-white/10 disabled:opacity-40"
               disabled={!canRedo}
               onClick={handleRedo}
               title="Újra (Ctrl+Y)"
               aria-label="Újra"
+              data-testid="button-redo"
             >
               <Redo2 className="w-3.5 h-3.5" />
             </Button>
           </div>
-        </CollapsibleTrigger>
+        </div>
         
         <CollapsibleContent>
           <div className="border-t border-white/5">

@@ -66,7 +66,7 @@ type BlurSettings = {
 const SLIDER_CONFIGS: readonly SliderConfig[] = [
   {
     id: 'lightness',
-    label: 'Lightness',
+    label: 'Világosság',
     valueKey: 'lightness',
     min: 0,
     max: 100,
@@ -76,7 +76,7 @@ const SLIDER_CONFIGS: readonly SliderConfig[] = [
   },
   {
     id: 'chroma',
-    label: 'Chroma',
+    label: 'Színtelítettség',
     valueKey: 'chroma',
     min: 0,
     max: 400,
@@ -87,7 +87,7 @@ const SLIDER_CONFIGS: readonly SliderConfig[] = [
   },
   {
     id: 'hue',
-    label: 'Hue',
+    label: 'Színárnyalat',
     valueKey: 'hue',
     min: 0,
     max: 360,
@@ -98,21 +98,21 @@ const SLIDER_CONFIGS: readonly SliderConfig[] = [
 ] as const;
 
 const ANIMATION_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'pulse', label: 'Pulse' },
-  { value: 'breathe', label: 'Breathe' },
-  { value: 'wave', label: 'Wave' },
+  { value: 'none', label: 'Nincs' },
+  { value: 'pulse', label: 'Pulzálás' },
+  { value: 'breathe', label: 'Lélegzés' },
+  { value: 'wave', label: 'Hullám' },
 ] as const;
 
 const THEME_OPTIONS = [
-  { value: 'dark', label: 'Dark Mode' },
-  { value: 'light', label: 'Light Mode' },
-  { value: 'auto', label: 'Auto' },
+  { value: 'dark', label: 'Sötét mód' },
+  { value: 'light', label: 'Világos mód' },
+  { value: 'auto', label: 'Automatikus' },
 ] as const;
 
 const BLUR_SLIDERS = [
-  { id: 'x', label: 'Horizontal (X)', min: -800, max: -350, step: 10, unit: 'px' },
-  { id: 'y', label: 'Vertical (Y)', min: -1400, max: -600, step: 10, unit: 'px' },
+  { id: 'x', label: 'Vízszintes (X)', min: -800, max: -350, step: 10, unit: 'px' },
+  { id: 'y', label: 'Függőleges (Y)', min: -1400, max: -600, step: 10, unit: 'px' },
 ] as const;
 
 // ==================== HELPER FUNKCIÓK ====================
@@ -237,9 +237,9 @@ const AnimationControls = memo<AnimationControlsProps>(({
 }) => (
   <>
     <div className="space-y-2">
-      <label className="text-xs text-zinc-500">Animation Type</label>
+      <label className="text-xs text-zinc-500">Animáció típusa</label>
       <Select value={animation} onValueChange={onAnimationChange}>
-        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-300 h-9 rounded-lg">
+        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-300 h-9 rounded-lg" data-testid="select-animation-type">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -254,7 +254,7 @@ const AnimationControls = memo<AnimationControlsProps>(({
       <>
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-zinc-500">
-            <span>Speed</span>
+            <span>Sebesség</span>
             <span>{animationSpeed.toFixed(1)}s</span>
           </div>
           <Slider
@@ -264,13 +264,13 @@ const AnimationControls = memo<AnimationControlsProps>(({
             max={5}
             step={0.1}
             className="w-full"
-            aria-label="Animation speed"
+            aria-label="Animáció sebesség"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-zinc-500">
-            <span>Intensity</span>
+            <span>Intenzitás</span>
             <span>{animationIntensity}%</span>
           </div>
           <Slider
@@ -280,7 +280,7 @@ const AnimationControls = memo<AnimationControlsProps>(({
             max={100}
             step={5}
             className="w-full"
-            aria-label="Animation intensity"
+            aria-label="Animáció intenzitás"
           />
         </div>
       </>
@@ -309,7 +309,7 @@ const BlurControls = memo<{
           max={max}
           step={step}
           className="w-full"
-          aria-label={`${label} slider`}
+          aria-label={`${label} csúszka`}
         />
       </div>
     ))}
@@ -319,10 +319,11 @@ const BlurControls = memo<{
       size="sm"
       onClick={onReset}
       className="w-full mt-2 text-xs"
-      aria-label="Reset blur position"
+      aria-label="Pozíció visszaállítása"
+      data-testid="button-reset-blur-position"
     >
       <RotateCcw className="w-3 h-3 mr-1.5" />
-      Reset Position
+      Pozíció visszaállítása
     </Button>
   </>
 ));
@@ -384,14 +385,14 @@ export const GlowEditor = memo(() => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Fejléc */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-100">Glow Settings</h2>
-          <p className="text-xs text-zinc-500">CSS Progressive Blur</p>
+          <h2 className="text-lg font-semibold tracking-tight text-zinc-100">Glow beállítások</h2>
+          <p className="text-xs text-zinc-500">CSS progresszív elmosás</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-zinc-500 tracking-wider uppercase">Power</span>
+          <span className="text-xs font-bold text-zinc-500 tracking-wider uppercase">Be/Ki</span>
           <Switch
             checked={state.powerOn}
             onCheckedChange={togglePower}
@@ -399,16 +400,17 @@ export const GlowEditor = memo(() => {
               "data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500",
               "border border-white/10"
             )}
-            aria-label="Toggle glow effect power"
+            aria-label="Glow effekt be-/kikapcsolása"
+            data-testid="switch-glow-power"
           />
         </div>
       </div>
 
-      {/* Theme Mode */}
+      {/* Téma mód */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-400">Theme Mode</label>
+        <label className="text-sm font-medium text-zinc-400">Téma mód</label>
         <Select defaultValue="dark">
-          <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-300 h-9 rounded-lg">
+          <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-300 h-9 rounded-lg" data-testid="select-theme-mode">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -419,10 +421,10 @@ export const GlowEditor = memo(() => {
         </Select>
       </div>
 
-      {/* Base Color */}
+      {/* Alapszín */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-zinc-400">Base Color</label>
+          <label className="text-sm font-medium text-zinc-400">Alapszín</label>
           <ColorPicker
             color={state.glowSettings.baseColor}
             hexInput={hexInput}
@@ -444,10 +446,10 @@ export const GlowEditor = memo(() => {
         </div>
       </div>
 
-      {/* Animation Controls */}
+      {/* Animáció vezérlők */}
       <div className="pt-4 border-t border-white/5">
         <CollapsibleSection
-          title="Animation"
+          title="Animáció"
           icon={Sparkles}
           open={animationOpen}
           onOpenChange={setAnimationOpen}
@@ -463,19 +465,19 @@ export const GlowEditor = memo(() => {
         </CollapsibleSection>
       </div>
 
-      {/* Shape Configuration */}
+      {/* Forma konfiguráció */}
       <CollapsibleSection
-        title="Shape configuration"
+        title="Forma konfiguráció"
         open={shapeOpen}
         onOpenChange={setShapeOpen}
       >
-        <p className="text-xs text-zinc-500">Shape controls coming soon...</p>
+        <p className="text-xs text-zinc-500">Forma vezérlők hamarosan...</p>
       </CollapsibleSection>
 
-      {/* Background blur */}
+      {/* Háttér elmosás */}
       <div className="pt-4 border-t border-white/5">
         <CollapsibleSection
-          title="Background blur"
+          title="Háttér elmosás"
           open={blurOpen}
           onOpenChange={setBlurOpen}
         >
@@ -487,11 +489,11 @@ export const GlowEditor = memo(() => {
         </CollapsibleSection>
       </div>
 
-      {/* Footer */}
+      {/* Lábléc */}
       <div className="pt-2 flex flex-col gap-4">
         <div className="text-xs text-zinc-600 flex justify-center gap-4">
           <span>
-            Simulating CSS{' '}
+            CSS szimuláció:{' '}
             <code className="bg-zinc-950 px-1 py-0.5 rounded text-zinc-500">backdrop-filter</code>
             {' '}&{' '}
             <code className="bg-zinc-950 px-1 py-0.5 rounded text-zinc-500">mask-image</code>
@@ -499,7 +501,7 @@ export const GlowEditor = memo(() => {
         </div>
         
         <CollapsibleSection
-          title="View CSS Code"
+          title="CSS kód megtekintése"
           icon={Code}
           open={codeOpen}
           onOpenChange={setCodeOpen}

@@ -31,7 +31,7 @@ const Index = () => {
             {/* Left: Editor Panel */}
             <section className="w-1/2 h-full p-4 overflow-hidden flex flex-col">
               <div className="relative flex-1 rounded-3xl border border-border/80 bg-card/80 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_22px_60px_rgba(0,0,0,0.9)] backdrop-blur-xl overflow-hidden flex flex-col">
-                {/* Top bar */}
+                {/* Felső sáv */}
                 <div className="flex items-center justify-between px-5 sm:px-6 pt-4 sm:pt-5 pb-4 border-b border-border/70">
                   <div className="flex items-center gap-2.5">
                     <div className="flex items-center gap-1.5">
@@ -45,7 +45,7 @@ const Index = () => {
                         Multi‑Effect Editor
                       </p>
                       <p className="text-sm text-muted-foreground mt-0.5">
-                        Fine-tune lights, shadows, and moods in real-time
+                        Fények, árnyékok és hangulatok valós idejű finomhangolása
                       </p>
                     </div>
                   </div>
@@ -64,14 +64,14 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Bottom footer */}
+                {/* Alsó lábléc */}
                 <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-t border-border/80 bg-card/90">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-secondary border border-border/80">
                       <Settings className="h-2.5 w-2.5 text-muted-foreground" />
                     </span>
                     <span className="tracking-tight">
-                      Use Ctrl+Z / Ctrl+Y for undo/redo
+                      Ctrl+Z / Ctrl+Y a visszavonáshoz/újra
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-primary">
@@ -84,28 +84,28 @@ const Index = () => {
 
             {/* Right: Presets & Preview Panel */}
             <section className="w-1/2 h-full p-4 overflow-hidden flex flex-col gap-4">
-              {/* Tabs */}
+              {/* Fülek */}
               <Tabs value={rightPanel} onValueChange={(v) => setRightPanel(v as RightPanel)} className="w-full">
                 <TabsList className="w-full bg-secondary/50 border border-border/80 grid grid-cols-5">
-                  <TabsTrigger value="actions" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <TabsTrigger value="actions" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary" data-testid="tab-actions">
                     <Zap className="w-3.5 h-3.5" />
-                    <span className="text-xs">Actions</span>
+                    <span className="text-xs">Műveletek</span>
                   </TabsTrigger>
-                  <TabsTrigger value="presets" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <TabsTrigger value="presets" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary" data-testid="tab-presets">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span className="text-xs">Presets</span>
+                    <span className="text-xs">Presetek</span>
                   </TabsTrigger>
-                  <TabsTrigger value="theme" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <TabsTrigger value="theme" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary" data-testid="tab-theme">
                     <Settings className="w-3.5 h-3.5" />
-                    <span className="text-xs">Theme</span>
+                    <span className="text-xs">Téma</span>
                   </TabsTrigger>
-                  <TabsTrigger value="inspector" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <TabsTrigger value="inspector" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary" data-testid="tab-inspector">
                     <Layers className="w-3.5 h-3.5" />
-                    <span className="text-xs">Inspect</span>
+                    <span className="text-xs">Vizsgáló</span>
                   </TabsTrigger>
-                  <TabsTrigger value="export" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                  <TabsTrigger value="export" className="gap-1 data-[state=active]:bg-primary/20 data-[state=active]:text-primary" data-testid="tab-export">
                     <Code className="w-3.5 h-3.5" />
-                    <span className="text-xs">Export</span>
+                    <span className="text-xs">Exportálás</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>

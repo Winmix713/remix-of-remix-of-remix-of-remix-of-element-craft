@@ -176,8 +176,8 @@ class StorageManager {
     } catch (error) {
       console.error('Failed to save custom presets:', error);
       toast({
-        title: "Storage Error",
-        description: "Failed to save preset to local storage.",
+        title: "Tárolási hiba",
+        description: "Nem sikerült menteni a presetet a helyi tárolóba.",
         variant: "destructive",
       });
     }
@@ -228,13 +228,13 @@ class FileExporter {
       URL.revokeObjectURL(url);
       
       toast({ 
-        title: "Exported", 
-        description: `Settings exported as ${filename}` 
+        title: "Exportálva", 
+        description: `Beállítások exportálva: ${filename}` 
       });
     } catch (error) {
       toast({ 
-        title: "Export Failed", 
-        description: "Could not export settings.", 
+        title: "Export sikertelen", 
+        description: "Nem sikerült exportálni a beállításokat.", 
         variant: "destructive" 
       });
     }
@@ -249,8 +249,8 @@ class FileExporter {
           resolve(data);
         } catch (error) {
           toast({ 
-            title: "Import Failed", 
-            description: "Invalid JSON file.", 
+            title: "Import sikertelen", 
+            description: "Érvénytelen JSON fájl.", 
             variant: "destructive" 
           });
           resolve(null);
@@ -258,8 +258,8 @@ class FileExporter {
       };
       reader.onerror = () => {
         toast({ 
-          title: "Import Failed", 
-          description: "Could not read file.", 
+          title: "Import sikertelen", 
+          description: "Nem sikerült beolvasni a fájlt.", 
           variant: "destructive" 
         });
         resolve(null);
@@ -277,8 +277,8 @@ const SaveDialog = memo<SaveDialogProps>(({ open, onOpenChange, onSave }) => {
   const handleSave = useCallback(() => {
     if (!name.trim()) {
       toast({ 
-        title: "Error", 
-        description: "Please enter a preset name.", 
+        title: "Hiba", 
+        description: "Kérlek add meg a preset nevét.", 
         variant: "destructive" 
       });
       return;
@@ -291,37 +291,39 @@ const SaveDialog = memo<SaveDialogProps>(({ open, onOpenChange, onSave }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="flex-1 text-xs">
+        <Button variant="outline" size="sm" className="flex-1 text-xs" data-testid="button-save-preset">
           <Save className="w-3 h-3 mr-1.5" />
-          Save Current
+          Mentés
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Save Custom Preset</DialogTitle>
+          <DialogTitle>Egyéni preset mentése</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
+            <label className="text-sm font-medium">Név</label>
             <Input
-              placeholder="My awesome preset"
+              placeholder="Az én preset-em"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              data-testid="input-preset-name"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Description (optional)</label>
+            <label className="text-sm font-medium">Leírás (opcionális)</label>
             <Input
-              placeholder="A brief description..."
+              placeholder="Rövid leírás..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              data-testid="input-preset-description"
             />
           </div>
-          <Button onClick={handleSave} className="w-full">
+          <Button onClick={handleSave} className="w-full" data-testid="button-confirm-save-preset">
             <Save className="w-4 h-4 mr-2" />
-            Save Preset
+            Preset mentése
           </Button>
         </div>
       </DialogContent>
@@ -337,23 +339,28 @@ const PresetCard = memo<PresetCardProps>(({
   onApply, 
   onDelete 
 }) => (
-  <button
+  <div
     onClick={onApply}
-    className="preset-card group p-3 text-left relative transition-transform hover:scale-[1.02] active:scale-[0.98]"
-    aria-label={`Apply ${preset.name} preset`}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => e.key === 'Enter' && onApply()}
+    className="preset-card group p-3 text-left relative transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+    aria-label={`${preset.name} preset alkalmazása`}
+    data-testid={`preset-card-${preset.id}`}
   >
-    {/* Delete button for custom presets */}
+    {/* Törlés gomb egyéni preseteknél */}
     {preset.isCustom && onDelete && (
       <button
         onClick={onDelete}
         className="absolute top-2 right-2 p-1 rounded bg-destructive/80 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
-        aria-label={`Delete ${preset.name}`}
+        aria-label={`${preset.name} törlése`}
+        data-testid={`button-delete-preset-${preset.id}`}
       >
         <Trash2 className="w-3 h-3" />
       </button>
     )}
     
-    {/* Preview gradient */}
+    {/* Előnézet gradiens */}
     <div 
       className="h-16 rounded-lg mb-2 relative overflow-hidden"
       style={{ background: preset.preview.gradient }}
@@ -368,12 +375,12 @@ const PresetCard = memo<PresetCardProps>(({
       )}
       {preset.isCustom && (
         <div className="absolute top-1 left-1 px-1.5 py-0.5 text-[8px] rounded bg-primary/80 text-primary-foreground font-medium">
-          Custom
+          Egyéni
         </div>
       )}
     </div>
     
-    {/* Info */}
+    {/* Információ */}
     <div className="space-y-0.5">
       <div className="flex items-center gap-1.5">
         <div 
@@ -390,7 +397,7 @@ const PresetCard = memo<PresetCardProps>(({
       </p>
     </div>
     
-    {/* Active effects indicators */}
+    {/* Aktív effekt jelzők */}
     <div className="flex gap-1 mt-2 flex-wrap">
       {Object.entries(preset.settings.activeEffects).map(([effect, isActive]) => (
         isActive && (
@@ -403,7 +410,7 @@ const PresetCard = memo<PresetCardProps>(({
         )
       ))}
     </div>
-  </button>
+  </div>
 ));
 
 PresetCard.displayName = 'PresetCard';
@@ -456,8 +463,8 @@ export const PresetsGallery = memo(() => {
     setSelectedPreset(preset.id);
     
     toast({
-      title: "Preset Applied",
-      description: `"${preset.name}" has been applied to your design.`,
+      title: "Preset alkalmazva",
+      description: `"${preset.name}" sikeresen alkalmazva.`,
     });
   }, [
     updateGlowSettings, 
@@ -483,8 +490,8 @@ export const PresetsGallery = memo(() => {
     setSaveDialogOpen(false);
 
     toast({
-      title: "Preset Saved",
-      description: `"${newPreset.name}" has been saved to your presets.`,
+      title: "Preset elmentve",
+      description: `"${newPreset.name}" sikeresen mentve.`,
     });
   }, [customPresets, state]);
 
@@ -497,8 +504,8 @@ export const PresetsGallery = memo(() => {
     if (selectedPreset === presetId) setSelectedPreset(null);
     
     toast({ 
-      title: "Preset Deleted", 
-      description: "Custom preset has been removed." 
+      title: "Preset törölve", 
+      description: "Az egyéni preset eltávolítva." 
     });
   }, [customPresets, selectedPreset]);
 
@@ -530,8 +537,8 @@ export const PresetsGallery = memo(() => {
     if (data.activeEffects) applyEffectChanges(data.activeEffects);
     
     toast({ 
-      title: "Imported", 
-      description: "Settings imported successfully." 
+      title: "Importálva", 
+      description: "Beállítások sikeresen importálva." 
     });
 
     e.target.value = '';
@@ -545,20 +552,20 @@ export const PresetsGallery = memo(() => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Fejléc */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10">
             <Sparkles className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Effect Presets</h3>
-            <p className="text-xs text-muted-foreground">One-click theme combinations</p>
+            <h3 className="text-sm font-semibold text-foreground">Effekt presetek</h3>
+            <p className="text-xs text-muted-foreground">Egy kattintásos téma kombinációk</p>
           </div>
         </div>
       </div>
 
-      {/* Save & Import Controls */}
+      {/* Mentés és import vezérlők */}
       <div className="flex gap-2 mb-4">
         <SaveDialog
           open={saveDialogOpen}
@@ -571,10 +578,11 @@ export const PresetsGallery = memo(() => {
           size="sm" 
           className="text-xs" 
           onClick={exportSettings}
-          aria-label="Export current settings"
+          aria-label="Jelenlegi beállítások exportálása"
+          data-testid="button-export-settings"
         >
           <Download className="w-3 h-3 mr-1.5" />
-          Export
+          Exportálás
         </Button>
 
         <Button 
@@ -582,10 +590,11 @@ export const PresetsGallery = memo(() => {
           size="sm" 
           className="text-xs" 
           onClick={() => fileInputRef.current?.click()}
-          aria-label="Import settings from file"
+          aria-label="Beállítások importálása fájlból"
+          data-testid="button-import-settings"
         >
           <Upload className="w-3 h-3 mr-1.5" />
-          Import
+          Importálás
         </Button>
         <input
           ref={fileInputRef}
@@ -612,7 +621,7 @@ export const PresetsGallery = memo(() => {
 
       {allPresets.length === DEFAULT_PRESETS.length && (
         <p className="text-xs text-center text-muted-foreground pt-2">
-          Save your own custom presets to see them here
+          Mentsd el saját presetjeidet, hogy itt megjelenjenek
         </p>
       )}
     </div>
